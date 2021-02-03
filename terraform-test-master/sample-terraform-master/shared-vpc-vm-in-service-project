@@ -1,0 +1,50 @@
+provider "google" {
+credentials = "${file("credentials.json")}"
+ project     = "project-1-256305" #service_project
+ region      = "asia-east1"
+}
+resource "google_compute_instance" "default" {
+  name         = "test"
+  machine_type = "n1-standard-1"
+  zone         = "asia-east1-a"
+  tags = ["foo", "bar"]
+  boot_disk {
+    initialize_params {
+      image = "centos-7-v20190905"
+    }
+  }
+  // Local SSD disk
+   network_interface {
+ //   network = "host-vpc"
+     subnetwork = "host-subnet-1"  
+      subnetwork_project ="host-prj-249608" #host_project
+ access_config {
+      // Ephemeral IP
+    }
+  }
+  
+  metadata = {
+    foo = "bar"
+  }
+}
+
+resource "google_compute_firewall" "default" {
+  name    = "host-vpc"
+  network = "host-vpc"
+project  =  "host-prj-249608"
+  allow {
+    protocol = "icmp"
+  }
+  allow {
+    protocol = "tcp"
+    ports    = ["0-65535"]
+  }
+  allow {
+      protocol = "udp"
+      ports    = ["0-65535"]
+  }
+  //source_tags = ["web"]
+  source_ranges = ["10.250.230.0/24"]
+  
+  priority = "1000"
+}

@@ -1,0 +1,183 @@
+provider "google" {
+ credentials = "${file("credentials.json")}"
+ project     = "${var.gcp_project_id}"
+ region      = "${var.provider_region}"
+}
+resource "google_compute_network" "private_sql_network" {
+  provider = "google"
+  name       = "${var.vpc_name}"
+  auto_create_subnetworks = "false"
+}
+resource "google_compute_subnetwork" "subnet1" {
+  name          = "${var.vpc_subnet_name}"
+  ip_cidr_range = "10.1.1.0/24"
+  network       = "${var.vpc_name}"
+  depends_on    = ["google_compute_network.private_sql_network"]
+  region        = "${var.subnet_region}"
+  private_ip_google_access = true
+}
+resource "google_compute_global_address" "private_sql_ip_address" {
+  provider = "google"
+  name          = "${var.ip_name}"
+  purpose       = "VPC_PEERING"
+  address_type = "INTERNAL"
+  prefix_length = 16
+  network       = "${google_compute_network.private_sql_network.self_link}"
+}
+
+resource "google_service_networking_connection" "private_sql_vpc_connection" {
+  provider = "google"
+  network       = "${google_compute_network.private_sql_network.self_link}"
+  service       = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = ["${google_compute_global_address.private_sql_ip_address.name}"]
+}
+resource "random_id" "db_name_suffix" {
+  byte_length = 4
+}
+
+
+resource "google_sql_database_instance" "instance" {
+  provider = "google"
+  name = "private-instance-${random_id.db_name_suffix.hex}"
+  region = "${var.subnet_region}"
+  depends_on = [
+    "google_service_networking_connection.private_sql_vpc_connection"
+  ]
+  settings {
+    tier = "${var.sql_machine_type}"
+    ip_configuration {
+      ipv4_enabled = false
+      private_network = "${google_compute_network.private_sql_network.self_link}"
+       authorized_networks {
+        value = "${google_compute_address.reserveip.address}/32"
+        name  = "${var.vpc_name}"
+      }
+     authorized_networks {
+         value = "${google_compute_address.reserveipt.address}/32"
+                  }
+      
+    authorized_networks {
+          value = "${google_compute_address.reserveipo.address}/32"
+      }
+    }
+  }
+}
+
+resource "google_compute_address" "reserveip" {
+  name   = "reserveip"
+  region = "${var.compute_region}"
+}
+resource "google_compute_instance" "default" {
+  name         = "${var.first_instance}"
+  machine_type = "${var.compute_machine_type}"
+  zone         = "${var.compute_zone}"
+  tags         = ["foo", "bar"]
+  boot_disk {
+    initialize_params {
+      image = "${var.compute_image}"
+    }
+  }
+
+  network_interface {
+
+    network    = "${google_compute_network.private_sql_network.self_link}"
+    subnetwork = "${google_compute_subnetwork.subnet1.self_link}"
+    access_config {
+      nat_ip       = "${google_compute_address.reserveip.address}"
+      network_tier = "PREMIUM"
+    }
+  }
+
+  metadata = {
+    foo = "bar"
+  }
+}
+
+resource "google_compute_address" "reserveipt" {
+  name   = "reserveipt"
+  region = "${var.compute_region}"
+}
+resource "google_compute_instance" "defaultt" {
+  name         = "${var.second_instance}"
+  machine_type = "${var.compute_machine_type}"
+  zone         = "${var.compute_zone}"
+  tags         = ["foo", "bar"]
+  boot_disk {
+    initialize_params {
+      image = "${var.compute_image}"
+    }
+  }
+
+  network_interface {
+
+    network    = "${google_compute_network.private_sql_network.self_link}"
+    subnetwork = "${google_compute_subnetwork.subnet1.self_link}"
+    access_config {
+      nat_ip       = "${google_compute_address.reserveipt.address}"
+      network_tier = "PREMIUM"
+    }
+  }
+
+  metadata = {
+    foo = "bar"
+  }
+}
+
+resource "google_compute_address" "reserveipo" {
+  name   = "reserveipo"
+  region = "${var.compute_region}"
+}
+resource "google_compute_instance" "defaulto" {
+  name         = "${var.third_instance}"
+  machine_type = "${var.compute_machine_type}"
+  zone         = "${var.compute_zone}"
+  tags         = ["foo", "bar"]
+  boot_disk {
+    initialize_params {
+      image = "${var.compute_image}"
+    }
+  }
+
+  network_interface {
+
+    network    = "${google_compute_network.private_sql_network.self_link}"
+    subnetwork = "${google_compute_subnetwork.subnet1.self_link}"
+    access_config {
+      nat_ip       = "${google_compute_address.reserveipo.address}"
+      network_tier = "PREMIUM"
+    }
+  }
+
+  metadata = {
+    foo = "bar"
+  }
+}
+
+resource "google_bigquery_dataset" "dataset" {
+  dataset_id                  ="${var.dataset_id}"
+  friendly_name               = "${var.bq_friendly_name}"
+  description                 = "Created via Terraform"
+  location                    = "${var.bq_location}"
+ // default_table_expiration_ms = 3600000
+
+  labels = {
+    env = "default"
+  }
+
+  access {
+    role          = "OWNER"
+    user_by_email = "${var.bq_owner_email}"
+  }
+  access {
+    role   = "READER"
+    domain = "cognizant.com"
+  }
+}
+
+
+
+resource "google_storage_bucket" "storage_bucket" {
+  name     = "${var.bucket_name}"
+  location = "${var.bucket_location}"
+  storage_class = "${var.bucket_class}"
+}

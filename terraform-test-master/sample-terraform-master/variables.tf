@@ -1,0 +1,16 @@
+variable "region" {}
+variable "gcp_project" {}
+variable "instance_name" {}
+variable "instance_type" {}
+variable "instance_zone" {}
+variable "instance_image" {}
+variable "instance_vpc" {}
+variable "bq_dataset_id" {}
+variable "bq_dataset_friendly_name" {}
+variable "bq_location" {}
+variable "bucket_name" {}
+variable "bucket_location" {}
+variable "bucket_class" {}
+variable "sql_db_name" {}
+variable "sql_db_instance_name" {}
+variable "sql_region" {}

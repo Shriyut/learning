@@ -1,0 +1,3 @@
+stack-2 consists firewall rules, subnets and the stack
+shared- consists shared vpc, entire vpc, vms in shared vpc ( vms are in service project and network interfave belongs to host vpc inside host project)
+along with the entire stack

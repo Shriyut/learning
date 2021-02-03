@@ -1,0 +1,53 @@
+ credentials = "${file("credentials.json")}"
+ project     = "cloudglobaldelivery-1000135575"
+ region      = "us-central1"
+}
+resource "google_compute_network" "private_sql_network" {
+  provider = "google"
+  name       = "private-sql-network"
+  auto_create_subnetworks = "false"
+}
+resource "google_compute_subnetwork" "subnet1" {
+  name          = "private-sql-network-subnet"
+  ip_cidr_range = "10.1.1.0/24"
+  network       = "private-sql-network"
+  depends_on    = ["google_compute_network.private_sql_network"]
+  region        = "us-central1"
+  private_ip_google_access = true
+}
+resource "google_compute_global_address" "private_sql_ip_address" {
+  provider = "google"
+  name          = "private-sql-ip-address"
+  purpose       = "VPC_PEERING"
+  address_type = "INTERNAL"
+  prefix_length = 16
+  network       = "${google_compute_network.private_sql_network.self_link}"
+}
+resource "google_service_networking_connection" "private_sql_vpc_connection" {
+  provider = "google"
+  network       = "${google_compute_network.private_sql_network.self_link}"
+  service       = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = ["${google_compute_global_address.private_sql_ip_address.name}"]
+}
+resource "random_id" "db_name_suffix" {
+  byte_length = 4
+}
+resource "google_sql_database_instance" "instance" {
+  provider = "google"
+  name = "private-instance-${random_id.db_name_suffix.hex}"
+  region = "us-central1"
+  depends_on = [
+    "google_service_networking_connection.private_sql_vpc_connection"
+  ]
+  settings {
+    tier = "db-f1-micro"
+    ip_configuration {
+      ipv4_enabled = true
+      private_network = "${google_compute_network.private_sql_network.self_link}"
+       authorized_networks {
+        value = "google_compute_subnetwork.subnet1.ip_cidr_range"
+        name  = "private-sql-network"
+      }
+    }
+  }
+}
