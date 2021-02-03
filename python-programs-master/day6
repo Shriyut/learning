@@ -1,0 +1,18 @@
+n = int(input())
+
+if n <= 10 and n >= 1:
+    for i in range(0, n):
+        str1 = input()
+        
+        l = len(str1)
+
+        stro = ""
+        stre = ""
+
+        if l >=2 and l <= 10000:
+            for i in range(0, l):
+                if i % 2 == 0:
+                    stre = stre + str1[i]
+                else:
+                    stro = stro + str1[i]
+        print (stre + " " + stro)
