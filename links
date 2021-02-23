@@ -6,3 +6,5 @@ https://unix.stackexchange.com/questions/146615/run-at-command-in-two-minutes-ti
 https://stackoverflow.com/questions/5789642/how-to-send-controlc-from-a-bash-script
 https://stackoverflow.com/questions/4423934/bash-run-a-command-for-n-minutes-then-sighup-it
 http://www.pixelbeat.org/scripts/timeout
+
+https://stackoverflow.com/questions/52386995/fetching-stackdriver-monitoring-timeseries-data-for-a-pod-running-on-a-k8s-clust
