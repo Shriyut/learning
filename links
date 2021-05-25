@@ -13,3 +13,5 @@ https://medium.com/@karthikeyan_krishnaswamy/terraform-state-eea807cc00ba
 
 top -H -b -n 1 -p $java_process_id > ./top-output.$(date+"%Y-%m-%d-%H:%M:%S").log
 jstack -l $java_process_id > ./thread.output.$(date+"%Y-%m-%d-%H:%M:%S").
+to find top consumer thread
+ps -p <mule_id> -Lo pid,lwp,nlwp,ruser,pcpu,stime,etime
